@@ -124,7 +124,7 @@
       width: 90%;
       border-radius: 10px;
       border: 4px solid white;
-      position: relative; /* Adicione esta linha */
+      position: relative;
     }
 
     .closeMap {
@@ -140,20 +140,17 @@
       color: #1e40af;
       cursor: pointer;
       z-index: 10000;
-
-
-  /* --- ADIÇÕES PARA CORRIGIR O ESTICAMENTO E CENTRALIZAR O 'X' --- */
-  width: 30px;   /* Define uma largura fixa para o botão */
-  height: 30px;  /* Define uma altura fixa para o botão (faça igual à largura para um círculo) */
-  display: flex; /* Habilita o modelo de caixa flexível para centralizar o conteúdo */
-  justify-content: center; /* Centraliza o conteúdo horizontalmente */
-  align-items: center; /* Centraliza o conteúdo verticalmente */
+      width: 30px;
+      height: 30px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
     }
   </style>
 </head>
 <body>
   <header>
-    📍 Registro de Localizações - V96
+    📍 Registro de Localizações - V97
   </header>
 
   <div class="container">
@@ -175,13 +172,14 @@
 
   <div id="mapModal">
     <div id="map">
-        <button class="closeMap" onclick="fecharMapa()">×</button>
+      <button class="closeMap" onclick="fecharMapa()">×</button>
     </div>
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
     let db;
+    let mapInstance = null;
 
     window.onload = function () {
       abrirBanco();
@@ -195,7 +193,7 @@
       const request = indexedDB.open("localizacoesDB", 1);
       request.onupgradeneeded = function (event) {
         db = event.target.result;
-        const store = db.createObjectStore("locs", { keyPath: "id", autoIncrement: true });
+        db.createObjectStore("locs", { keyPath: "id", autoIncrement: true });
       };
       request.onsuccess = function (event) {
         db = event.target.result;
@@ -279,18 +277,31 @@
 
     function abrirMapa(lat, lng, datahora) {
       document.getElementById("mapModal").style.display = "flex";
-      const map = L.map("map").setView([lat, lng], 16);
+
+      // Destroi o mapa anterior, se existir
+      if (mapInstance) {
+        mapInstance.remove();
+        mapInstance = null;
+      }
+
+      mapInstance = L.map("map").setView([lat, lng], 16);
+
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         attribution: '© OpenStreetMap'
-      }).addTo(map);
-      L.marker([lat, lng]).addTo(map)
+      }).addTo(mapInstance);
+
+      L.marker([lat, lng]).addTo(mapInstance)
         .bindPopup(`Data:<br>${datahora}`)
         .openPopup();
     }
 
     function fecharMapa() {
       document.getElementById("mapModal").style.display = "none";
-      document.getElementById("map").innerHTML = ""; // limpa para evitar sobreposição
+
+      if (mapInstance) {
+        mapInstance.remove();
+        mapInstance = null;
+      }
     }
   </script>
 </body>
