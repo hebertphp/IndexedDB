@@ -2,17 +2,8 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>App de Localização com Mapa</title>
-
-  <!-- CSS Leaflet -->
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-    integrity="sha256-sA+e2Ht8TG8FpMx6FkJlwHLvNxSzQ6Tb1LWm3v0Zt1w="
-    crossorigin=""
-  />
-
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>App de Localização</title>
   <style>
     body {
       margin: 0;
@@ -90,7 +81,6 @@
       border-radius: 10px;
       overflow: hidden;
       box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-      cursor: pointer;
     }
 
     th, td {
@@ -102,14 +92,6 @@
     th {
       background-color: #007bff;
       color: white;
-    }
-
-    #map {
-      height: 300px;
-      border-radius: 12px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-      margin-top: 20px;
-      display: none;
     }
 
     @media (max-width: 500px) {
@@ -128,7 +110,7 @@
   </style>
 </head>
 <body>
-  <div class="app-bar">App de Localização com Mapa - V6</div>
+  <div class="app-bar">App de Localização</div>
 
   <div class="container">
     <form id="formLocalizacao">
@@ -154,7 +136,7 @@
     </form>
 
     <div style="overflow-x:auto">
-      <table id="tabela">
+      <table>
         <thead>
           <tr>
             <th>ID</th>
@@ -166,16 +148,7 @@
         <tbody id="tabelaRegistros"></tbody>
       </table>
     </div>
-
-    <div id="map"></div>
   </div>
-
-  <!-- JS Leaflet -->
-  <script
-    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-    integrity="sha256-o9N1j8LkqL/XwHZK2C3jYom1w3K5slnw6N+M9EV6Aro="
-    crossorigin=""
-  ></script>
 
   <script>
     let db;
@@ -216,7 +189,6 @@
         e.target.reset();
         carregarRegistros();
         preencherDataAtual();
-        esconderMapa();
       };
     });
 
@@ -243,10 +215,6 @@
               <td>${r.long}</td>
               <td>${new Date(r.dataHora).toLocaleString()}</td>
             `;
-            // Adiciona evento click para abrir o mapa
-            row.addEventListener("click", () => {
-              mostrarMapa(r.lat, r.long, r.dataHora);
-            });
             tbody.appendChild(row);
           });
         }
@@ -277,46 +245,9 @@
       document.getElementById("dataHora").value = isoLocal;
     }
 
-    let map;
-    let marker;
-
-    function mostrarMapa(lat, long, dataHora) {
-      const mapDiv = document.getElementById("map");
-      mapDiv.style.display = "block";
-
-      if (!map) {
-        map = L.map("map").setView([lat, long], 13);
-
-        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-          maxZoom: 19,
-          attribution:
-            '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-        }).addTo(map);
-      } else {
-        map.setView([lat, long], 13);
-        if (marker) {
-          marker.remove();
-        }
-      }
-
-      marker = L.marker([lat, long])
-        .addTo(map)
-        .bindPopup(`Localização cadastrada em:<br>${new Date(dataHora).toLocaleString()}`)
-        .openPopup();
-
-      // Scrollar até o mapa (opcional)
-      mapDiv.scrollIntoView({ behavior: "smooth" });
-    }
-
-    function esconderMapa() {
-      const mapDiv = document.getElementById("map");
-      mapDiv.style.display = "none";
-    }
-
     window.onload = () => {
       preencherDataAtual();
       obterLocalizacao();
-      esconderMapa();
     };
   </script>
 </body>
