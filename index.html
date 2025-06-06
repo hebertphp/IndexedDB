@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>App de Localização</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f2f8ff;
+      color: #333;
+    }
+
+    .app-bar {
+      background-color: #007bff;
+      color: white;
+      padding: 1rem;
+      text-align: center;
+      font-size: 1.4rem;
+      font-weight: bold;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+
+    .container {
+      max-width: 480px;
+      margin: auto;
+      padding: 20px;
+    }
+
+    form {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      background-color: #fff;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+    }
+
+    label {
+      font-size: 1rem;
+      margin-bottom: 4px;
+      color: #007bff;
+    }
+
+    input {
+      padding: 12px;
+      border-radius: 10px;
+      border: 1px solid #ccc;
+      font-size: 1rem;
+    }
+
+    .btn-group {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    button {
+      padding: 12px;
+      border: none;
+      border-radius: 10px;
+      background-color: #007bff;
+      color: white;
+      font-size: 1rem;
+      font-weight: bold;
+      cursor: pointer;
+      width: 100%;
+    }
+
+    button:hover {
+      background-color: #0056b3;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+
+    th, td {
+      padding: 10px;
+      text-align: center;
+      border-bottom: 1px solid #e0e0e0;
+    }
+
+    th {
+      background-color: #007bff;
+      color: white;
+    }
+
+    @media (max-width: 500px) {
+      table {
+        font-size: 0.9rem;
+      }
+
+      th, td {
+        padding: 8px;
+      }
+
+      .container {
+        padding: 10px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-bar">App de Localização</div>
+
+  <div class="container">
+    <form id="formLocalizacao">
+      <div>
+        <label for="lat">Latitude:</label>
+        <input type="number" id="lat" name="lat" step="any" required />
+      </div>
+
+      <div>
+        <label for="long">Longitude:</label>
+        <input type="number" id="long" name="long" step="any" required />
+      </div>
+
+      <div>
+        <label for="dataHora">Data e Hora:</label>
+        <input type="datetime-local" id="dataHora" name="dataHora" required />
+      </div>
+
+      <div class="btn-group">
+        <button type="button" onclick="obterLocalizacao()">📍 Obter Localização</button>
+        <button type="submit">💾 Salvar Localização</button>
+      </div>
+    </form>
+
+    <div style="overflow-x:auto">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Latitude</th>
+            <th>Longitude</th>
+            <th>Data/Hora</th>
+          </tr>
+        </thead>
+        <tbody id="tabelaRegistros"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    let db;
+    const request = indexedDB.open("LocalizacoesDB", 1);
+
+    request.onupgradeneeded = function (event) {
+      db = event.target.result;
+      const store = db.createObjectStore("localizacoes", {
+        keyPath: "id",
+        autoIncrement: true,
+      });
+      store.createIndex("dataHora", "dataHora", { unique: false });
+    };
+
+    request.onsuccess = function (event) {
+      db = event.target.result;
+      carregarRegistros();
+    };
+
+    request.onerror = function (event) {
+      console.error("Erro ao abrir IndexedDB", event);
+    };
+
+    document.getElementById("formLocalizacao").addEventListener("submit", function (e) {
+      e.preventDefault();
+
+      const lat = parseFloat(document.getElementById("lat").value);
+      const long = parseFloat(document.getElementById("long").value);
+      const dataHora = document.getElementById("dataHora").value;
+
+      const transacao = db.transaction(["localizacoes"], "readwrite");
+      const store = transacao.objectStore("localizacoes");
+
+      const registro = { lat, long, dataHora };
+      store.add(registro);
+
+      transacao.oncomplete = function () {
+        e.target.reset();
+        carregarRegistros();
+        preencherDataAtual();
+      };
+    });
+
+    function carregarRegistros() {
+      const transacao = db.transaction(["localizacoes"], "readonly");
+      const store = transacao.objectStore("localizacoes");
+
+      const registros = [];
+
+      store.openCursor(null, "prev").onsuccess = function (event) {
+        const cursor = event.target.result;
+        if (cursor) {
+          registros.push(cursor.value);
+          cursor.continue();
+        } else {
+          const tbody = document.getElementById("tabelaRegistros");
+          tbody.innerHTML = "";
+          registros.forEach((r) => {
+            const row = document.createElement("tr");
+            row.innerHTML = `
+              <td>${r.id}</td>
+              <td>${r.lat}</td>
+              <td>${r.long}</td>
+              <td>${new Date(r.dataHora).toLocaleString()}</td>
+            `;
+            tbody.appendChild(row);
+          });
+        }
+      };
+    }
+
+    function obterLocalizacao() {
+      if ("geolocation" in navigator) {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            document.getElementById("lat").value = pos.coords.latitude.toFixed(6);
+            document.getElementById("long").value = pos.coords.longitude.toFixed(6);
+          },
+          (err) => {
+            alert("Erro ao obter localização: " + err.message);
+          }
+        );
+      } else {
+        alert("Geolocalização não suportada.");
+      }
+    }
+
+    function preencherDataAtual() {
+      const agora = new Date();
+      const isoLocal = new Date(agora.getTime() - agora.getTimezoneOffset() * 60000)
+        .toISOString()
+        .slice(0, 16);
+      document.getElementById("dataHora").value = isoLocal;
+    }
+
+    window.onload = () => {
+      preencherDataAtual();
+      obterLocalizacao();
+    };
+  </script>
+</body>
+</html>
