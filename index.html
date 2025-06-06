@@ -140,12 +140,20 @@
       color: #1e40af;
       cursor: pointer;
       z-index: 10000;
+
+
+  /* --- ADIÇÕES PARA CORRIGIR O ESTICAMENTO E CENTRALIZAR O 'X' --- */
+  width: 30px;   /* Define uma largura fixa para o botão */
+  height: 30px;  /* Define uma altura fixa para o botão (faça igual à largura para um círculo) */
+  display: flex; /* Habilita o modelo de caixa flexível para centralizar o conteúdo */
+  justify-content: center; /* Centraliza o conteúdo horizontalmente */
+  align-items: center; /* Centraliza o conteúdo verticalmente */
     }
   </style>
 </head>
 <body>
   <header>
-    📍 Registro de Localizações - V95
+    📍 Registro de Localizações - V96
   </header>
 
   <div class="container">
