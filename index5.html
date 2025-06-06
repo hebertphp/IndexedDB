@@ -197,11 +197,10 @@
       const store = transacao.objectStore("localizacoes");
 
       const registros = [];
-      const maxRegistros = 5; // limite de registros para mostrar
 
       store.openCursor(null, "prev").onsuccess = function (event) {
         const cursor = event.target.result;
-        if (cursor && registros.length < maxRegistros) {
+        if (cursor) {
           registros.push(cursor.value);
           cursor.continue();
         } else {
