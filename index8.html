@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Localizações - PWA</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f0f4ff;
+      margin: 0;
+      padding: 0;
+    }
+    header {
+      background-color: #007bff;
+      color: white;
+      padding: 1rem;
+      text-align: center;
+      font-size: 1.2rem;
+    }
+    .container {
+      padding: 1rem;
+      max-width: 500px;
+      margin: auto;
+    }
+    form {
+      display: grid;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+    input, button {
+      padding: 0.8rem;
+      border-radius: 8px;
+      border: none;
+      font-size: 1rem;
+    }
+    input {
+      border: 1px solid #ccc;
+    }
+    button {
+      background-color: #007bff;
+      color: white;
+      cursor: pointer;
+    }
+    .cards {
+      display: grid;
+      gap: 1rem;
+    }
+    .card {
+      background: white;
+      border-radius: 8px;
+      padding: 1rem;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      cursor: pointer;
+      position: relative;
+    }
+    .card:hover {
+      background: #eef6ff;
+    }
+    .delete-btn {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: #e74c3c;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 25px;
+      height: 25px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .filter {
+      margin-bottom: 1rem;
+    }
+
+    /* Modal estilo app */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 9999;
+      left: 0; top: 0;
+      width: 100%; height: 100%;
+      background-color: rgba(0,0,0,0.6);
+    }
+    .modal-content {
+      position: relative;
+      margin: 10% auto;
+      background-color: #fff;
+      padding: 1rem;
+      border-radius: 10px;
+      width: 90%;
+      max-width: 400px;
+    }
+    .close-btn {
+      position: absolute;
+      top: 10px; right: 10px;
+      background: #e74c3c;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 30px;
+      height: 30px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    #map {
+      height: 300px;
+      border-radius: 8px;
+    }
+  </style>
+</head>
+<body>
+  <header>📍 Localizações (PWA) - V8</header>
+  <div class="container">
+    <form onsubmit="event.preventDefault(); salvarLocalizacao();">
+      <input type="text" id="lat" placeholder="Latitude" required>
+      <input type="text" id="long" placeholder="Longitude" required>
+      <button type="button" onclick="obterLocalizacao()">📡 Obter Localização</button>
+      <button type="submit">💾 Salvar Localização</button>
+    </form>
+
+    <input class="filter" type="text" id="filtro" placeholder="🔍 Filtrar por data..." oninput="carregarLocalizacoes()">
+
+    <div class="cards" id="saida"></div>
+  </div>
+
+  <div id="mapModal" class="modal">
+    <div class="modal-content">
+      <button class="close-btn" onclick="fecharModal()">✖</button>
+      <div id="map"></div>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script>
+    let db, map, marker;
+
+    window.onload = () => {
+      let request = indexedDB.open("meuDB", 1);
+      request.onupgradeneeded = e => {
+        db = e.target.result;
+        let store = db.createObjectStore("localizacoes", { keyPath: "id", autoIncrement: true });
+        store.createIndex("dataHora", "dataHora", { unique: false });
+      };
+      request.onsuccess = e => {
+        db = e.target.result;
+        obterLocalizacao(); // Preenche automaticamente ao abrir
+        carregarLocalizacoes();
+      };
+    };
+
+    function obterLocalizacao() {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(pos => {
+          document.getElementById("lat").value = pos.coords.latitude.toFixed(6);
+          document.getElementById("long").value = pos.coords.longitude.toFixed(6);
+        }, () => alert("Não foi possível obter localização"));
+      } else {
+        alert("Geolocalização não suportada");
+      }
+    }
+
+    function salvarLocalizacao() {
+      const lat = parseFloat(document.getElementById("lat").value);
+      const long = parseFloat(document.getElementById("long").value);
+      const dataHora = new Date().toISOString();
+
+      const trans = db.transaction(["localizacoes"], "readwrite");
+      const store = trans.objectStore("localizacoes");
+      store.add({ lat, long, dataHora });
+
+      trans.oncomplete = () => carregarLocalizacoes();
+    }
+
+    function carregarLocalizacoes() {
+      const filtro = document.getElementById("filtro").value.toLowerCase();
+      const trans = db.transaction("localizacoes", "readonly");
+      const store = trans.objectStore("localizacoes");
+      const request = store.getAll();
+
+      request.onsuccess = () => {
+        const dados = request.result
+          .filter(item => item.dataHora.includes(filtro))
+          .sort((a, b) => b.id - a.id) // ordem decrescente
+          .slice(0, 5);
+
+        const saida = document.getElementById("saida");
+        saida.innerHTML = "";
+
+        dados.forEach(item => {
+          const card = document.createElement("div");
+          card.className = "card";
+          card.onclick = () => mostrarMapa(item.lat, item.long, item.dataHora);
+          card.innerHTML = `
+            <strong>Latitude:</strong> ${item.lat}<br>
+            <strong>Longitude:</strong> ${item.long}<br>
+            <strong>Data/Hora:</strong> ${new Date(item.dataHora).toLocaleString("pt-BR")}
+            <button class="delete-btn" onclick="event.stopPropagation(); deletar(${item.id})">🗑️</button>
+          `;
+          saida.appendChild(card);
+        });
+      };
+    }
+
+    function deletar(id) {
+      if (confirm("Deseja apagar este registro?")) {
+        const trans = db.transaction("localizacoes", "readwrite");
+        trans.objectStore("localizacoes").delete(id);
+        trans.oncomplete = () => carregarLocalizacoes();
+      }
+    }
+
+    function mostrarMapa(lat, long, dataHora) {
+      document.getElementById("mapModal").style.display = "block";
+
+      setTimeout(() => {
+        if (!map) {
+          map = L.map("map").setView([lat, long], 15);
+          L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+            attribution: "© OpenStreetMap"
+          }).addTo(map);
+        } else {
+          map.setView([lat, long], 15);
+        }
+
+        if (marker) map.removeLayer(marker);
+        marker = L.marker([lat, long]).addTo(map);
+        marker.bindPopup(`<b>Data:</b><br>${new Date(dataHora).toLocaleString("pt-BR")}`).openPopup();
+      }, 100); // pequena espera para o modal exibir antes de inicializar o mapa
+    }
+
+    function fecharModal() {
+      document.getElementById("mapModal").style.display = "none";
+    }
+  </script>
+</body>
+</html>
