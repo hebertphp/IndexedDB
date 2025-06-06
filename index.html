@@ -2,322 +2,223 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>App de Localização com Mapa</title>
-
-  <!-- CSS Leaflet -->
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-    integrity="sha256-sA+e2Ht8TG8FpMx6FkJlwHLvNxSzQ6Tb1LWm3v0Zt1w="
-    crossorigin=""
-  />
-
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Localizações</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <style>
     body {
       margin: 0;
-      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-      background-color: #f2f8ff;
-      color: #333;
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f0f4f8;
     }
 
-    .app-bar {
-      background-color: #007bff;
-      color: white;
-      padding: 1rem;
-      text-align: center;
-      font-size: 1.4rem;
-      font-weight: bold;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-    }
-
-    .container {
-      max-width: 480px;
+    .app-container {
+      max-width: 400px;
       margin: auto;
-      padding: 20px;
+      padding: 1rem;
+      background: #fff;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      border-radius: 12px;
+      margin-top: 1rem;
     }
 
-    form {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      background-color: #fff;
-      padding: 20px;
-      border-radius: 12px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-      margin-bottom: 20px;
+    h2 {
+      text-align: center;
+      color: #005ce6;
     }
 
     label {
-      font-size: 1rem;
-      margin-bottom: 4px;
-      color: #007bff;
+      display: block;
+      margin-top: 10px;
+      color: #005ce6;
+      font-weight: bold;
     }
 
     input {
-      padding: 12px;
-      border-radius: 10px;
+      width: 100%;
+      padding: 10px;
       border: 1px solid #ccc;
-      font-size: 1rem;
-    }
-
-    .btn-group {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
+      border-radius: 8px;
+      margin-top: 4px;
     }
 
     button {
+      width: 100%;
       padding: 12px;
       border: none;
-      border-radius: 10px;
-      background-color: #007bff;
-      color: white;
-      font-size: 1rem;
+      border-radius: 8px;
+      margin-top: 10px;
       font-weight: bold;
       cursor: pointer;
-      width: 100%;
+      background-color: #007bff;
+      color: #fff;
+      transition: background-color 0.3s;
     }
 
     button:hover {
       background-color: #0056b3;
     }
 
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      background: white;
+    .cards-container {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .card {
+      background-color: #ffffff;
       border-radius: 10px;
-      overflow: hidden;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      padding: 10px;
+      transition: background-color 0.2s ease;
       cursor: pointer;
     }
 
-    th, td {
-      padding: 10px;
-      text-align: center;
-      border-bottom: 1px solid #e0e0e0;
+    .card:hover {
+      background-color: #f2f8ff;
     }
 
-    th {
-      background-color: #007bff;
-      color: white;
+    .card p {
+      margin: 5px 0;
+      font-size: 0.9rem;
+    }
+
+    .card b {
+      color: #333;
     }
 
     #map {
       height: 300px;
-      border-radius: 12px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
       margin-top: 20px;
+      border-radius: 8px;
       display: none;
-    }
-
-    @media (max-width: 500px) {
-      table {
-        font-size: 0.9rem;
-      }
-
-      th, td {
-        padding: 8px;
-      }
-
-      .container {
-        padding: 10px;
-      }
     }
   </style>
 </head>
 <body>
-  <div class="app-bar">App de Localização com Mapa - V6</div>
+  <div class="app-container">
+    <h2>Registrar Localização - V7</h2>
 
-  <div class="container">
-    <form id="formLocalizacao">
-      <div>
-        <label for="lat">Latitude:</label>
-        <input type="number" id="lat" name="lat" step="any" required />
-      </div>
+    <label for="lat">Latitude:</label>
+    <input type="text" id="lat" readonly />
 
-      <div>
-        <label for="long">Longitude:</label>
-        <input type="number" id="long" name="long" step="any" required />
-      </div>
+    <label for="long">Longitude:</label>
+    <input type="text" id="long" readonly />
 
-      <div>
-        <label for="dataHora">Data e Hora:</label>
-        <input type="datetime-local" id="dataHora" name="dataHora" required />
-      </div>
+    <label for="dataHora">Data e Hora:</label>
+    <input type="datetime-local" id="dataHora" />
 
-      <div class="btn-group">
-        <button type="button" onclick="obterLocalizacao()">📍 Obter Localização</button>
-        <button type="submit">💾 Salvar Localização</button>
-      </div>
-    </form>
+    <button onclick="obterLocalizacao()">📍 Obter Localização</button>
+    <button onclick="salvarLocalizacao()">💾 Salvar Localização</button>
 
-    <div style="overflow-x:auto">
-      <table id="tabela">
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Latitude</th>
-            <th>Longitude</th>
-            <th>Data/Hora</th>
-          </tr>
-        </thead>
-        <tbody id="tabelaRegistros"></tbody>
-      </table>
-    </div>
+    <div class="cards-container" id="cardsContainer"></div>
 
     <div id="map"></div>
   </div>
 
-  <!-- JS Leaflet -->
-  <script
-    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-    integrity="sha256-o9N1j8LkqL/XwHZK2C3jYom1w3K5slnw6N+M9EV6Aro="
-    crossorigin=""
-  ></script>
-
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
     let db;
-    const request = indexedDB.open("LocalizacoesDB", 1);
+    let map, marker;
 
-    request.onupgradeneeded = function (event) {
-      db = event.target.result;
-      const store = db.createObjectStore("localizacoes", {
-        keyPath: "id",
-        autoIncrement: true,
-      });
-      store.createIndex("dataHora", "dataHora", { unique: false });
+    window.onload = () => {
+      abrirBanco();
+      obterLocalizacao();
     };
 
-    request.onsuccess = function (event) {
-      db = event.target.result;
-      carregarRegistros();
-    };
+    function abrirBanco() {
+      const request = indexedDB.open("LocalizacoesDB", 1);
 
-    request.onerror = function (event) {
-      console.error("Erro ao abrir IndexedDB", event);
-    };
-
-    document.getElementById("formLocalizacao").addEventListener("submit", function (e) {
-      e.preventDefault();
-
-      const lat = parseFloat(document.getElementById("lat").value);
-      const long = parseFloat(document.getElementById("long").value);
-      const dataHora = document.getElementById("dataHora").value;
-
-      const transacao = db.transaction(["localizacoes"], "readwrite");
-      const store = transacao.objectStore("localizacoes");
-
-      const registro = { lat, long, dataHora };
-      store.add(registro);
-
-      transacao.oncomplete = function () {
-        e.target.reset();
-        carregarRegistros();
-        preencherDataAtual();
-        esconderMapa();
+      request.onerror = () => console.error("Erro ao abrir o banco.");
+      request.onsuccess = (event) => {
+        db = event.target.result;
+        carregarLocalizacoes();
       };
-    });
-
-    function carregarRegistros() {
-      const transacao = db.transaction(["localizacoes"], "readonly");
-      const store = transacao.objectStore("localizacoes");
-
-      const registros = [];
-      const maxRegistros = 5; // limite de registros para mostrar
-
-      store.openCursor(null, "prev").onsuccess = function (event) {
-        const cursor = event.target.result;
-        if (cursor && registros.length < maxRegistros) {
-          registros.push(cursor.value);
-          cursor.continue();
-        } else {
-          const tbody = document.getElementById("tabelaRegistros");
-          tbody.innerHTML = "";
-          registros.forEach((r) => {
-            const row = document.createElement("tr");
-            row.innerHTML = `
-              <td>${r.id}</td>
-              <td>${r.lat}</td>
-              <td>${r.long}</td>
-              <td>${new Date(r.dataHora).toLocaleString()}</td>
-            `;
-            // Adiciona evento click para abrir o mapa
-            row.addEventListener("click", () => {
-              mostrarMapa(r.lat, r.long, r.dataHora);
-            });
-            tbody.appendChild(row);
-          });
-        }
+      request.onupgradeneeded = (event) => {
+        db = event.target.result;
+        const store = db.createObjectStore("localizacoes", { keyPath: "id", autoIncrement: true });
+        store.createIndex("dataHora", "dataHora");
       };
     }
 
     function obterLocalizacao() {
-      if ("geolocation" in navigator) {
-        navigator.geolocation.getCurrentPosition(
-          (pos) => {
-            document.getElementById("lat").value = pos.coords.latitude.toFixed(6);
-            document.getElementById("long").value = pos.coords.longitude.toFixed(6);
-          },
-          (err) => {
-            alert("Erro ao obter localização: " + err.message);
-          }
-        );
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition((pos) => {
+          document.getElementById("lat").value = pos.coords.latitude.toFixed(6);
+          document.getElementById("long").value = pos.coords.longitude.toFixed(6);
+          const agora = new Date();
+          document.getElementById("dataHora").value = agora.toISOString().slice(0,16);
+        });
       } else {
         alert("Geolocalização não suportada.");
       }
     }
 
-    function preencherDataAtual() {
-      const agora = new Date();
-      const isoLocal = new Date(agora.getTime() - agora.getTimezoneOffset() * 60000)
-        .toISOString()
-        .slice(0, 16);
-      document.getElementById("dataHora").value = isoLocal;
+    function salvarLocalizacao() {
+      const lat = parseFloat(document.getElementById("lat").value);
+      const long = parseFloat(document.getElementById("long").value);
+      const dataHora = document.getElementById("dataHora").value;
+
+      const trans = db.transaction(["localizacoes"], "readwrite");
+      const store = trans.objectStore("localizacoes");
+      store.add({ lat, long, dataHora });
+
+      trans.oncomplete = () => {
+        carregarLocalizacoes();
+      };
     }
 
-    let map;
-    let marker;
+    function carregarLocalizacoes() {
+      const trans = db.transaction(["localizacoes"], "readonly");
+      const store = trans.objectStore("localizacoes");
+
+      const request = store.getAll();
+      request.onsuccess = () => {
+        const dados = request.result
+          .sort((a, b) => b.id - a.id)
+          .slice(0, 5);
+
+        const container = document.getElementById("cardsContainer");
+        container.innerHTML = "";
+
+        dados.forEach((item) => {
+          const card = document.createElement("div");
+          card.className = "card";
+          card.innerHTML = `
+            <p><b>ID:</b> ${item.id}</p>
+            <p><b>Latitude:</b> ${item.lat}</p>
+            <p><b>Longitude:</b> ${item.long}</p>
+            <p><b>Data/Hora:</b> ${new Date(item.dataHora).toLocaleString("pt-BR")}</p>
+          `;
+          card.addEventListener("click", () => {
+            mostrarMapa(item.lat, item.long, item.dataHora);
+          });
+          container.appendChild(card);
+        });
+      };
+    }
 
     function mostrarMapa(lat, long, dataHora) {
       const mapDiv = document.getElementById("map");
       mapDiv.style.display = "block";
 
       if (!map) {
-        map = L.map("map").setView([lat, long], 13);
-
+        map = L.map("map").setView([lat, long], 15);
         L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-          maxZoom: 19,
-          attribution:
-            '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+          attribution: "© OpenStreetMap",
         }).addTo(map);
       } else {
-        map.setView([lat, long], 13);
-        if (marker) {
-          marker.remove();
-        }
+        map.setView([lat, long], 15);
       }
 
-      marker = L.marker([lat, long])
-        .addTo(map)
-        .bindPopup(`Localização cadastrada em:<br>${new Date(dataHora).toLocaleString()}`)
-        .openPopup();
+      if (marker) {
+        map.removeLayer(marker);
+      }
 
-      // Scrollar até o mapa (opcional)
-      mapDiv.scrollIntoView({ behavior: "smooth" });
+      marker = L.marker([lat, long]).addTo(map);
+      marker.bindPopup(`<b>Data/Hora:</b><br>${new Date(dataHora).toLocaleString("pt-BR")}`).openPopup();
     }
-
-    function esconderMapa() {
-      const mapDiv = document.getElementById("map");
-      mapDiv.style.display = "none";
-    }
-
-    window.onload = () => {
-      preencherDataAtual();
-      obterLocalizacao();
-      esconderMapa();
-    };
   </script>
 </body>
 </html>
